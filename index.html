@@ -1,0 +1,429 @@
+
+<!DOCTYPE html>
+<html>
+<head lang="en">
+
+<meta charset="UTF-8">
+
+<title>Split & Join - Cut up files into chunks or merge file parts together</title>
+<meta name="description"
+      content="Split files up into chunks or join files together instantly in the browser using JavaScript. No need to install anything just drag & drop.">
+<meta name="keywords" content="split,join,merge,segment,cut,chunk,file,binary,client side,browser,javascript,tool">
+
+<style>
+
+.dropZone {
+    padding: 15px;
+    padding-bottom: 20px;
+    color: #999;
+    margin: 5px;
+    border-radius: 5px;
+    border: 2px dashed #BBB;
+    max-height: 60%;
+    overflow: auto;
+
+}
+
+.emptyDropZone {
+    padding-top: 25px;
+    min-height: 55px;
+    text-align: center;
+    vertical-align: middle;
+    margin: 0 auto;
+}
+
+.docIcon {
+    background: #eee;
+    background: -moz-linear-gradient(top, #ddd 0, #eee 15%, #fff 40%, #fff 70%, #eee 100%);
+    background: -webkit-linear-gradient(top, #ddd 0, #eee 15%, #fff 40%, #fff 70%, #eee 100%);
+    border: 1px solid #ccc;
+    -moz-border-radius: 3px 15px 3px 3px;
+    -webkit-border-radius: 3px 15px 3px 3px;
+    border-radius: 3px 15px 3px 3px;
+    -moz-box-shadow: inset rgba(255, 255, 255, 0.8) 0 1px 1px;
+    -webkit-box-shadow: inset rgba(255, 255, 255, 0.8) 0 1px 1px;
+    box-shadow: inset rgba(255, 255, 255, 0.8) 0 1px 1px;
+    display: block;
+    width: 40px;
+    height: 56px;
+    position: relative;
+    text-indent: -9999em;
+    margin: 0 auto;
+}
+
+.docIcon:before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    background: #ccc;
+    background: -moz-linear-gradient(45deg, #fff 0, #eee 50%, #ccc 100%);
+    background: -webkit-linear-gradient(45deg, #fff 0, #eee 50%, #ccc 100%);
+    box-shadow: rgba(0, 0, 0, 0.05) -1px 1px 1px, inset white 0 0 1px;
+    border-bottom: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    -moz-border-radius: 0 14px 0 0;
+    -webkit-border-radius: 0 14px 0 0;
+    border-radius: 0 14px 0 0;
+}
+
+.docIcon:after {
+    content: "";
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 60%;
+    margin: 22px 20% 0;
+    background: #ccc;
+    background: -moz-linear-gradient(top, #ccc 0, #ccc 20%, #fff 20%, #fff 40%, #ccc 40%, #ccc 60%, #fff 60%, #fff 80%, #ccc 80%, #ccc 100%);
+    background: -webkit-linear-gradient(top, #ccc 0, #ccc 20%, #fff 20%, #fff 40%, #ccc 40%, #ccc 60%, #fff 60%, #fff 80%, #ccc 80%, #ccc 100%);
+    height: 15px;
+}
+
+.hidden {
+    height: 0px;
+    overflow: hidden !important;
+    border: 0px !important;
+    margin: 0px !important;
+}
+
+.unhidden {
+    display: block;
+    overflow: hidden !important;
+    transition: all 0.3s ease-in-out;
+}
+
+.joinBox {
+    border: 2px solid #bbb;
+    border-radius: 5px;
+    margin: 5px;
+}
+
+
+.download:hover .miniBar {
+    visibility: visible;
+    opacity: 1;
+    white-space: nowrap;
+}
+
+
+.overlay {
+    visibility: hidden;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background-color: #111;
+    opacity: 0.5;
+    z-index: 1001;
+}
+
+.overlay-message {
+    color: #bbb;
+    border: 1px solid #bbb;
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -50px;
+    margin-left: -100px;
+    width: 200px;
+    height: 100px;
+    background: #222;
+    border-radius: 10px;
+    background-image: -webkit-linear-gradient(top, #444, #000);
+    background-image: -moz-linear-gradient(top, #444, #000);
+    background-image: -o-linear-gradient(top, #444, #000);
+    background-image: linear-gradient(to bottom, #444, #000);
+    opacity: 1;
+    z-index: 1002;
+}
+
+.progressbar {
+    margin: 20px;
+    height: 25px !important;
+}
+
+
+.growBox {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.modal-dialog {
+    width: 480px !important;
+}
+
+.chunkSizeInput {
+    width: 60px;
+}
+
+.dividerLine {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px dotted #bbb;
+}
+
+.btn-mini {
+    color: #000;
+    padding: 0px !important;
+    height: 20px;
+    width: 40px;
+}
+
+.fit {
+    padding-bottom: 10px;
+}
+
+.chunkText {
+    text-align: center;
+    top: 8px;
+}
+
+    .progress-c {
+        padding-top:20px;
+        padding-left:15px;
+    }
+    .progress-m {
+        padding-top:10px;
+        text-align: center;
+
+    }
+
+
+</style>
+<link rel="stylesheet" href="theme.css">
+    <!-- @formatter:off -->
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+        ga('create', 'UA-54203104-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    <!-- @formatter:on -->
+</head>
+<body>
+
+<header role="header">
+    <div class="navbar">
+        <div class="topShading"></div>
+        <div class="navbar-header topBar">
+            <a class="topBarTitle" href="/">
+                <div class="mrToolsley">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAATCAYAAACQjC21AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAABMAAAATABluxGeQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAANuSURBVDiNpZNtbFNVHMafc+7t623Xu24dvauzXTbBBc3M1jDHfIMtjheJgcggIfsgoESQBTW+oLhINKgYEgPEqJkJfjHBDyzbyGI0GF7MzHhdgMUIJd1mS9t1by5t7729vff4QbdsrIsf9v92znOe3/+f55xDsL1tAEW+AgAGGNPBiIH40B125qsXsUiZ6po/95fa95U/Ws0zzo7R4Zt6iJSn5XDoKI8iSYRH8gMUAAFAAcOYXAxGCHE2vLpz25Nb3xVMlAIAGDbj6qVe+7XQJT/N76L2xYDB1eLhqhdek2ZgAEBAEHx6AypLuGfyA+1OH3E4luWTxIr6Up7jzQtmAIF3ea1AYRjaAldBUTFWbdiSDzg9lRBsJkveOdRM0qDo/2k/JhKDC9TAyqZ8prtxkhqNR+ft6cxAJBlJx6/0dhPGGIhUHsDal47jkSc2gXAAKKBlVSQiFxC98zP6ejsRbFqPitoWeAINJeFfuNX1jShf8Tg0PcuS0bvxRNcHF873/NFKGGP/ZkCICc2tn6JmzV5YBBtAYFIy0EwCoKRlCIU2TkmDJwSqxQU6FUPh9e/vOcdvnWOpydNDQ+xXACCMMRxs2/O2p9h9IByJtZ0cTNqtwcbPmgpypZtKKNKKio5RAS4eeMWXg8oIumLInRsc/kbrPvHmG3te3lHm8x4Zjt4/9OXXp74jAMzfHvtk/PL1gY8yitzpdopCVdXyM8uK3ZUzGaVVDRaegue42dxiidH+8303WimlTPK6d1QGHt65/+BhP2GM4cSR9pC7UJTGJsb7C11ivWC3WeeGPimrWZ5S3mkxzXtmqXQmNTk9fdlbXPTU2PjE7dff/7iWAkAsmTxm4jnrQ5K05kFYKpOZeivu+v1Q1NIlK6o8V3MIdkeZ5F0LgAz/FftiNkMAeGff7nVlvtJ2QknAYjaLmm78fVGxhntyHkuGmmsAoECX+1ponNS5aAXTdUdWz01pqhYKjUQ/PNlx6uI84NwihJghij54fDbUbdyIyuqjUJXfcLZjL2RZR2ggAiDDGMs96OUX0AAwxrIAwgBAdrWvmrkbdrPvVr7zcyv/X56ZtKH5MZhtK/7rQkjNc8ElAVH9bB28/vcAAFbb82hsObA04NkfOsFYcnY98mf3koBs5PYExu6fhmFEoCo38OPxnv8D/gNCvlC6prw2IgAAAABJRU5ErkJggg==">
+                </div>Split & Joins</a>
+
+
+            <div class="navbar-collapse collapse navbar-responsive-collapse col-xs-offset-1">
+                <ul class="nav topNav navbar-nav">
+                    <li><a class="topLink" href="/"></a></li>
+                    <li><a class="topLink" href="/blog"></a></li>
+
+                </ul>
+                <ul class="nav topNav navbar-nav navbar-right">
+		    <li><a class="topLink" href="/pripoli.html" style="font-size: x-small"></a></li>
+                    <li>            <img id="infoButton" class="infoButton"
+                                         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAqElEQVR4nO3XPQqAMAwF4FfxcuKmXsub+LMojo4eqy66GTQxaakY6FIi/aDmoW7dWsSsLOrpqQI6AP5idaEANbFfhQJQ5WIDRKUJ8KEAPbE/SAC54JlGchBVn3oHzAFUAJ1rsgbcBU1pDRAFjSZANOeagCU2oITBNSQ1hj/gB8y4zwJ/9JkACuU+NuBpBrCywiKKWZHNAYzKfQB4n2TU/8CrSmoMvwnYAa66HqL/hSH8AAAAAElFTkSuQmCC">
+                    </li>
+                </ul>
+
+            </div>
+        </div>
+    </div>
+</header>
+
+
+<section>
+    <div class="rightSide" id="infoPane">
+        <div class="miscBox">
+            <div class="infoBox">
+        <span class="help">
+            Split files up into chunks or merge files together.<br><hr> Add a single file to split.<br>Add multiple files to join.
+        </span>
+            </div>
+            <div class="privacyBox">
+                <br>
+                <img class="noCloudIcon"
+                     src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PHN2ZyB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgaGVpZ2h0PSI0OHB4IiB3aWR0aD0iNDhweCIgdmVyc2lvbj0iMS4xIiB4bWxuczpjYz0iaHR0cDovL2NyZWF0aXZlY29tbW9ucy5vcmcvbnMjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iPiA8ZyBmaWxsPSIjYmZjNzhkIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMjczLjg3IC0xNTAuMjEpIj4gIDxwYXRoIGQ9Im0zMTIuNTEgMTYzLjYyYzAuMzQ2LTEuODUyIDAuMTg0LTUuMDM1LTIuODYzLTcuMjU3LTEuNjk5LTEuMjM5LTUuMjYtMi40LTguNjk5IDAuMjY1LTQuMTA0LTguMTE2LTEyLjQzMi02LjcyOC0xNS4zOTYtNC43OS0yLjg0IDEuODU3LTYuMTA3IDUuNDI0LTQuODY1IDExLjcyOC0zLjgzOCAxLjA1OC02LjY5MyA0LjUwMi02LjY5MyA4LjY2OCAwIDQuOTU3IDQuMDE2IDguOTczIDguOTczIDguOTczaDI3LjA1NWM0Ljk1NSAwIDguOTczLTQuMDE2IDguOTczLTguOTczLTAuMDAzLTQuMDktMi40OTktNy4zNjktNi40ODUtOC42MTR6bS0xMC43MTQgOS41NTgtMi4xMjIgMi4xMjItMy4xODItMy4xODItMy4xODIgMy4xODItMi4xMjItMi4xMjIgMy4xODItMy4xODItMy4xODItMy4xODIgMi4xMjItMi4xMjEgMy4xODIgMy4xODEgMy4xODItMy4xODEgMi4xMjIgMi4xMjEtMy4xODIgMy4xODIgMy4xODIgMy4xODJ6IiBmaWxsPSIjYmZjNzhkIi8+IDwvZz48L3N2Zz4="/></img>
+                <br>
+                Maximum privacy<br><br>This tool runs entirely in your browser through JavaScript.<br><br>Click <a
+                    href="pripoli.html">here</a> for more info.<br><br>
+            </div>
+            <div class="socialBox">
+                Share the awesome!<br><br>
+                <a class="socialIcon facebook" rel="nofollow" target="_blank" title="Share this on Facebook" href="https://www.facebook.com/sharer.php?u=http%3A%2F%2Fwww.toolsley.com%2Fsplit.html&amp;t=Split+and+join+files+in+your+browser"></a>
+                <a class="socialIcon twitter" rel="nofollow" target="_blank" title="Tweet this"
+                   href="https://twitter.com/share?url=http://www.toolsley.com/split.html&amp;text=Split+and+join+files+in+your+browser"></a>
+                <a class="socialIcon googlePlus" rel="nofollow" target="_blank" title="Share this on Google Plus"
+                   href="https://plus.google.com/share?hl=en&amp;url=http://www.toolsley.com/split.html"></a>
+                <a class="socialIcon linkedin" rel="nofollow" target="_blank" title="Share this on Linkedin"
+                   href="https://www.linkedin.com/shareArticle?mini=true&url=http://www.toolsley.com/split.html&title=Split%26join%20files%20in%20your%20browser&summary=Just%20drag%20%26%20drop%20It's%20that%20easy.&source="></a>
+                <a class="socialIcon mail" rel="nofollow" target="_self" title="Email this to a friend"
+                   href="mailto:?body=Split%20%26%20Join%20files%20without%20installing%20anything.%20Just%20drag%20and%20drop%20to%20<a%20href='http%3A%2F%2Fwww.toolsley.com%2Fsplit.html'>this%20page</a>."></a>
+            </div>
+            <div class="contactBox">
+                Questions / Bug reports?<br><br>
+                Contact <a href="mailto:toolsmith@toolsley.com">The Toolsmith</a><br>
+            </div>
+            <div class="legallinks">
+                <a href="disclaimer.html">Disclaimer</a> -
+                <a href="pripoli.html">Privacy policy</a>
+            </div>
+
+        </div>
+
+
+    </div>
+</section>
+
+<aside>
+    <div id="processing1" class="overlay"></div>
+    <div id="processing2" class="overlay-message">
+        <!--
+        <div class="progress progressbar">
+            <div id="progressMeter" class="progress-bar" role="progressbar" style="width: 0%;">
+            </div>
+        </div>-->
+        <div class="progress-c"> Building file, please wait... </div>
+
+        <div id="procMsg" class="progress-m" >0%</div>
+    </div>
+</aside>
+
+<aside>
+    <div id="browserWarn1" class="overlay"></div>
+    <div id="browserWarn2" class="overlay-message">
+        <div style="text-align: center; font-size: 72pt;">&#9785;</div>
+        <div id="browserMessage"></div>
+        <div id="dismissableBrowserError" class="text-center hidden" style="margin-top: 20px;">
+        <button class="btn btn-info">Dismiss</button>
+        </div>
+    </div>
+</aside>
+
+<main role="main">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Split & Join</h4>
+            </div>
+            <div class="modal-body">
+                <input type="file" id="files" name="files[]" multiple/>
+
+                <div id="validationFileZone" class="row well well-sm validationFileZone hidden">
+                    <span id="validationFileMessage"></span>
+
+                    <div id="validationFileRemoveButton" class="removeButton"></div>
+                </div>
+
+                <div class="row-fluid well emptyDropZone" id="dropZone">
+                    <div class="row">&nbsp;</div>
+                    <div class="row">
+                        Drag & Drop files here<br>
+                        or click below to <br>
+                    </div>
+                    <div class="row">&nbsp;</div>
+                    <div class="row">
+                        <button class="btn btn-primary" id="mainAddFilesButton">Add files</button>
+                    </div>
+                    <div class="row">&nbsp;</div>
+                </div>
+                <div class="row-fluid well growBox hidden" id="fileListBox">
+                    <div class="row">
+                        <ul class="list-group fileList" id="fileListList">
+                            <li class="list-group-item hidden" id="fileListTemplate">
+                                <div class="row">
+                                    <div class="col-sm-12" id="fileName">kitten-picture.jpg</div>
+                                </div>
+                            </li>
+
+                        </ul>
+                    </div>
+                    <div class="row well-sm">
+                        <div class="col-sm-4 text-center">
+                            <button class="btn btn-success" id="addMoreButton">Add more</button>
+                        </div>
+                        <div class="col-sm-4 text-center"></div>
+                        <div class="col-sm-4 text-center">
+                            <button class="btn btn-success" id="clearButton">Clear</button>
+                        </div>
+                    </div>
+
+                </div>
+                <div id="joinBox" class="well well-sm hidden growBox">
+                    <div class="row">
+                        <div class="col-sm-12">Join as:</div>
+                    </div>
+                    <div class="row">&nbsp;</div>
+                    <div class="row">
+
+                        <div id="fileInfo" class="col-sm-2 col-no-right-pad pull-left">
+                                <span class="download-icon docIcon"
+                                      style="height:50px; margin-right:10px; margin-bottom:10px;"></span>
+                        </div>
+                        <div class="col-sm-7">
+                            <input class="input-sm" id="joinFileName" type="text" value="">
+                            <div id="joinFileSize">-----</div>
+                        </div>
+                        <div id="fileInfo2" class="col-sm-1">
+                            <button id="joinSaveButton" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="splitBox" class="well well-sm hidden growBox">
+                    <div class="row">
+                        <div class="col-sm-12">Split into:</div>
+                    </div>
+                    <div class="row">&nbsp;</div>
+                    <div class="row">
+                        <div class="col-sm-1">
+                            <input class="input-sm chunkSizeInput" id="splitFileSize" type="text"
+                                   value="1" spellcheck="false" autocomplete="false"/>
+                        </div>
+                        <div id="splitUnitButtonsBox" class="col-sm-8 col-sm-offset-1">
+                            <div class="btn-toolbar">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-default" id="bytes">bytes</button>
+                                    <button class="btn btn-sm btn-default" id="kbytes">Kbytes</button>
+                                    <button class="btn btn-sm btn-default active" id="mbytes">Mbytes</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">&nbsp;</div>
+                    <div class="row col-sm-8 small chunkText" id="chunkLabel">5 chunks 1 Mbytes each</div>
+                    <button class="btn btn-success" id="saveAllButton">Save all in a ZIP</button>
+                    <div class="dividerLine"></div>
+
+                    <div class="row row-fluid" id="splitContainer">
+                        <div id="splitPartTemplate" class="col-sm-2 text-center fit hidden">
+                            <button id="splitButton" class="btn btn-mini btn-success">1</button>
+                        </div>
+                    </div>
+                    <div class="row">&nbsp;</div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</main>
+
+<script src="common.js"></script>
+<script src="FileSaver.js"></script>
+<!--<script src="zipStore.js"></script>
+<script src="split_dev.js"></script>-->
+<script src="split_prod.js"></script>
+</body>
+</html>
